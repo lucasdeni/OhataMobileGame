@@ -21,6 +21,7 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import java.util.Random;
 
 public class Game extends ApplicationAdapter {
+	//Declaracao de variaveis
 	private SpriteBatch batch;
 	Texture img;
 
@@ -66,12 +67,14 @@ public class Game extends ApplicationAdapter {
 	private Viewport viewport;
 	private final float VIRTUAL_WIDTH = 720;
 	private final float VIRTUAL_HEIGHT = 1280;
-	
+
+	//Metodo que inicia o app
 	@Override
 	public void create () {
 		inicializarTexturas();
 		inicializaObjetos();
 	}
+
 
 	private void inicializaObjetos() {
 		batch = new SpriteBatch();
@@ -83,6 +86,7 @@ public class Game extends ApplicationAdapter {
 		posicaoCanoHorizontal = larguraDispositivo;
 		espacoEntreCanos = 350;
 
+		//Inicializa textos
 		textoPontuacao = new BitmapFont();
 		textoPontuacao.setColor(Color.WHITE);
 		textoPontuacao.getData().setScale(10);
@@ -95,18 +99,22 @@ public class Game extends ApplicationAdapter {
 		textoMelhorPontuacao.setColor(Color.RED);
 		textoMelhorPontuacao.getData().setScale(2);
 
+		//Inicializa os formatos
 		shapeRenderer = new ShapeRenderer();
 		circuloPassaro = new Circle();
 		retanguloCanoBaixo = new Rectangle();
 		retanguloCanoCima = new Rectangle();
 
+		//Inicializa os sons
 		somVoando = Gdx.audio.newSound(Gdx.files.internal("som_asa.wav"));
 		somColisao = Gdx.audio.newSound(Gdx.files.internal("som_batida.wav"));
 		somPontuacao = Gdx.audio.newSound(Gdx.files.internal("som_pontos.wav"));
 
+		//Inicializa as preferencias
 		preferencias = Gdx.app.getPreferences("flappyBird");
 		pontuacaoMaxima = preferencias.getInteger("pontuacaoMaxima", 0);
 
+		//Inicializa as cameras
 		camera = new OrthographicCamera();
 		camera.position.set(VIRTUAL_WIDTH/2, VIRTUAL_HEIGHT/2, 0);
 
@@ -115,18 +123,22 @@ public class Game extends ApplicationAdapter {
 		viewport = new StretchViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, camera);
 	}
 
+	//Metodo responsavel pelas texturas
 	private void inicializarTexturas() {
+		//Faz a animacao do passaro
 		passaros = new Texture[3];
 		passaros[0] = new Texture("passaro1.png");
 		passaros[1] = new Texture("passaro2.png");
 		passaros[2] = new Texture("passaro3.png");
 
+		//Chamas as imagens do cenario
 		fundo = new Texture("fundo.png");
 		canoBaixo = new Texture("cano_baixo_maior.png");
 		canoTopo = new Texture("cano_topo_maior.png");
 		gameOver = new Texture("game_over.png");
 	}
 
+	//Chama esse metodo toda a vez que a rederizacao deve ser executada
 	@Override
 	public void render () {
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
@@ -136,6 +148,7 @@ public class Game extends ApplicationAdapter {
 		detectarColisoes();
 	}
 
+	//Contabiliza os pontos ao passar um cano
 	private void validarPontos() {
 		if(posicaoCanoHorizontal < 50 - passaros[0].getWidth()){
 			if(!passouCano){
@@ -175,6 +188,7 @@ public class Game extends ApplicationAdapter {
 		batch.end();
 	}
 
+	//Detecta as colisoes para o game over
 	private void detectarColisoes() {
 		circuloPassaro.set(
 			50 + posicaoHorizontalPassaro + passaros[0].getWidth() / 2,
@@ -205,9 +219,9 @@ public class Game extends ApplicationAdapter {
 	}
 
 	private void verificarEstadoJogo() {
-		boolean toqueTela = Gdx.input.justTouched();
+		boolean toqueTela = Gdx.input.justTouched(); //Verifica o toque na tela
 		if(estadoJogo == 0){
-			if(toqueTela){
+			if(toqueTela){ //Comeca o jogo
 				gravidade = -15;
 				estadoJogo = 1;
 				somVoando.play();
@@ -217,16 +231,16 @@ public class Game extends ApplicationAdapter {
 				gravidade = -15;
 				somVoando.play();
 			}
-			posicaoCanoHorizontal -= Gdx.graphics.getDeltaTime() * 200;
-			if(posicaoCanoHorizontal < -canoTopo.getWidth()){
+			posicaoCanoHorizontal -= Gdx.graphics.getDeltaTime() * 200; //Movimenta a cam
+			if(posicaoCanoHorizontal < -canoTopo.getWidth()){  //Define o local da abertura dos canos
 				posicaoCanoHorizontal = larguraDispositivo;
 				posicaoCanoVertical = random.nextInt(400) - 200;
 				passouCano = false;
 			}
-			if(posicaoInicialVerticalPassaro > 0 || toqueTela)
+			if(posicaoInicialVerticalPassaro > 0 || toqueTela)  //Faz o passaro voar a cada toque
 				posicaoInicialVerticalPassaro = posicaoInicialVerticalPassaro - gravidade;
 			gravidade++;
-		}else if(estadoJogo == 2){
+		}else if(estadoJogo == 2){ 
 			if(pontos > pontuacaoMaxima){
 				pontuacaoMaxima = pontos;
 				preferencias.putInteger("pontuacaoMaxima", pontuacaoMaxima);
@@ -245,11 +259,13 @@ public class Game extends ApplicationAdapter {
 		}
 	}
 
+	//Chama sempre quando a tela do jogo e redimencionada e nao esta pausado
 	@Override
 	public void resize(int width, int height) {
 		viewport.update(width, height);
 	}
 
+	//Chama quando o aplicativo e fechado
 	@Override
 	public void dispose () {
 
