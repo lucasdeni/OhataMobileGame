@@ -14,7 +14,6 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Circle;
 import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -23,13 +22,19 @@ import java.util.Random;
 public class Game extends ApplicationAdapter {
 	//Declaracao de variaveis
 	private SpriteBatch batch;
-	Texture img;
 
 	private Texture[] passaros;
 	private Texture fundo;
 	private Texture canoBaixo;
 	private Texture canoTopo;
 	private Texture gameOver;
+
+	private Texture coinIndex;
+	private Texture coinOuro;
+	private Texture coinPrata;
+	private float coinPosHorizontal;
+	private float coinPosVertical;
+	private Rectangle coinCollider;
 
 	private ShapeRenderer shapeRenderer;
 	private Circle circuloPassaro;
@@ -62,6 +67,7 @@ public class Game extends ApplicationAdapter {
 	Sound somPontuacao;
 
 	Preferences preferencias;
+	double randomValue;
 
 	private OrthographicCamera camera;
 	private Viewport viewport;
@@ -77,6 +83,7 @@ public class Game extends ApplicationAdapter {
 
 
 	private void inicializaObjetos() {
+		coinIndex = coinPrata;
 		batch = new SpriteBatch();
 		random = new Random();
 
@@ -85,6 +92,7 @@ public class Game extends ApplicationAdapter {
 		posicaoInicialVerticalPassaro = alturaDispositivo / 2;
 		posicaoCanoHorizontal = larguraDispositivo;
 		espacoEntreCanos = 350;
+		coinPosHorizontal = coinPosHorizontal + larguraDispositivo / 2;
 
 		//Inicializa textos
 		textoPontuacao = new BitmapFont();
@@ -104,6 +112,7 @@ public class Game extends ApplicationAdapter {
 		circuloPassaro = new Circle();
 		retanguloCanoBaixo = new Rectangle();
 		retanguloCanoCima = new Rectangle();
+		coinCollider = new Rectangle();
 
 		//Inicializa os sons
 		somVoando = Gdx.audio.newSound(Gdx.files.internal("som_asa.wav"));
@@ -129,13 +138,15 @@ public class Game extends ApplicationAdapter {
 		passaros = new Texture[3];
 		passaros[0] = new Texture("passaro1.png");
 		passaros[1] = new Texture("passaro2.png");
-		passaros[2] = new Texture("passaro3.png");
+		//passaros[2] = new Texture("passaro3.png");
 
 		//Chamas as imagens do cenario
 		fundo = new Texture("fundo.png");
 		canoBaixo = new Texture("cano_baixo_maior.png");
 		canoTopo = new Texture("cano_topo_maior.png");
 		gameOver = new Texture("game_over.png");
+		coinOuro = new Texture("coin_ouro.png");
+		coinPrata = new Texture("coin_prata.png");
 	}
 
 	//Chama esse metodo toda a vez que a rederizacao deve ser executada
@@ -207,8 +218,26 @@ public class Game extends ApplicationAdapter {
 			canoTopo.getWidth(), canoTopo.getHeight()
 		);
 
+		coinCollider.set(
+			coinPosHorizontal + coinIndex.getWidth() / 2,
+				coinPosVertical + coinIndex.getWidth() / 2,
+				coinIndex.getWidth()/2,coinIndex.getHeight()/2
+		);
+
 		boolean colidiuCanoCima = Intersector.overlaps(circuloPassaro, retanguloCanoCima);
 		boolean colidiuCanoBaixo = Intersector.overlaps(circuloPassaro, retanguloCanoBaixo);
+		boolean colidiuMoeda = Intersector.overlaps(circuloPassaro, coinCollider);
+
+		if(colidiuMoeda){
+			coinPosHorizontal -= Gdx.graphics.getDeltaTime() * 10000;
+			somPontuacao.play();
+			if(randomValue == 1){
+				pontos += 10;
+			}
+			else if(randomValue == 0){
+				pontos += 5;
+			}
+		}
 
 		if(colidiuCanoCima || colidiuCanoBaixo){
 			if(estadoJogo == 1){
@@ -231,11 +260,23 @@ public class Game extends ApplicationAdapter {
 				gravidade = -15;
 				somVoando.play();
 			}
-			posicaoCanoHorizontal -= Gdx.graphics.getDeltaTime() * 200; //Movimenta a cam
+			coinPosHorizontal -= Gdx.graphics.getDeltaTime() * 200; //Gravidade no Coin
+			posicaoCanoHorizontal -= Gdx.graphics.getDeltaTime() * 200; //Gravidade no Cano
 			if(posicaoCanoHorizontal < -canoTopo.getWidth()){  //Define o local da abertura dos canos
 				posicaoCanoHorizontal = larguraDispositivo;
 				posicaoCanoVertical = random.nextInt(400) - 200;
 				passouCano = false;
+			}
+			if(coinPosHorizontal < -coinOuro.getWidth()){
+				randomValue = Math.floor(Math.random()*2);
+				if(randomValue == 0){
+					coinIndex = coinPrata;
+				}
+				else if(randomValue == 1){
+					coinIndex = coinOuro;
+				}
+				coinPosHorizontal = larguraDispositivo;
+				coinPosVertical = random.nextInt(400)-200;
 			}
 			if(posicaoInicialVerticalPassaro > 0 || toqueTela)  //Faz o passaro voar a cada toque
 				posicaoInicialVerticalPassaro = posicaoInicialVerticalPassaro - gravidade;
