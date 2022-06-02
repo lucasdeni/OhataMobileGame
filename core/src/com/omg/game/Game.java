@@ -20,27 +20,30 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import java.util.Random;
 
 public class Game extends ApplicationAdapter {
-	//Declaracao de variaveis
+	//Variaveis de imagem
 	private SpriteBatch batch;
-
 	private Texture[] passaros;
 	private Texture fundo;
 	private Texture canoBaixo;
 	private Texture canoTopo;
 	private Texture gameOver;
-
-	private Texture coinIndex;
+	private Texture inicio;
 	private Texture coinOuro;
 	private Texture coinPrata;
-	private float coinPosHorizontal;
-	private float coinPosVertical;
-	private Rectangle coinCollider;
 
+	//Variaveis dos formatos dos objetos
 	private ShapeRenderer shapeRenderer;
 	private Circle circuloPassaro;
 	private Rectangle retanguloCanoCima;
 	private Rectangle retanguloCanoBaixo;
+	private Circle coinOuroCollider;
+	private Circle coinPrataCollider;
 
+	//Variaveis das funcoes do jogo
+	private float coinPosHorizontalOuro;
+	private float coinPosHorizontalPrata;
+	private float coinPosVerticalOuro;
+	private float coinPosVerticalPrata;
 	private float larguraDispositivo;
 	private float alturaDispositivo;
 	private float variacao = 0;
@@ -50,25 +53,26 @@ public class Game extends ApplicationAdapter {
 	private float posicaoCanoVertical;
 	private float espacoEntreCanos;
 	private float posicaoHorizontalPassaro = 0;
-
 	private int pontos = 0;
 	private int pontuacaoMaxima = 0;
 	private int estadoJogo = 0;
-
 	private boolean passouCano = false;
 	private Random random;
 
+	//Texto
 	BitmapFont textoPontuacao;
 	BitmapFont textoReiniciar;
 	BitmapFont textoMelhorPontuacao;
 
+	//Som
 	Sound somVoando;
 	Sound somColisao;
 	Sound somPontuacao;
 
+	//Preferencias
 	Preferences preferencias;
-	double randomValue;
 
+	//Controle de camera e tela
 	private OrthographicCamera camera;
 	private Viewport viewport;
 	private final float VIRTUAL_WIDTH = 720;
@@ -81,18 +85,21 @@ public class Game extends ApplicationAdapter {
 		inicializaObjetos();
 	}
 
-
+    //Metodo que inicia todos os objetos do jogo
 	private void inicializaObjetos() {
-		coinIndex = coinPrata;
 		batch = new SpriteBatch();
 		random = new Random();
 
+		//Espacamento da tela
 		larguraDispositivo = VIRTUAL_WIDTH;
 		alturaDispositivo = VIRTUAL_HEIGHT;
 		posicaoInicialVerticalPassaro = alturaDispositivo / 2;
 		posicaoCanoHorizontal = larguraDispositivo;
 		espacoEntreCanos = 350;
-		coinPosHorizontal = coinPosHorizontal + larguraDispositivo / 2;
+		coinPosHorizontalOuro = coinPosHorizontalOuro + larguraDispositivo / 2;
+		coinPosHorizontalPrata = coinPosHorizontalPrata + larguraDispositivo / 2;
+		coinPosVerticalOuro = random.nextInt((int) alturaDispositivo);
+		coinPosVerticalPrata = random.nextInt((int) alturaDispositivo);
 
 		//Inicializa textos
 		textoPontuacao = new BitmapFont();
@@ -112,7 +119,8 @@ public class Game extends ApplicationAdapter {
 		circuloPassaro = new Circle();
 		retanguloCanoBaixo = new Rectangle();
 		retanguloCanoCima = new Rectangle();
-		coinCollider = new Rectangle();
+		coinOuroCollider = new Circle();
+		coinPrataCollider = new Circle();
 
 		//Inicializa os sons
 		somVoando = Gdx.audio.newSound(Gdx.files.internal("som_asa.wav"));
@@ -138,7 +146,7 @@ public class Game extends ApplicationAdapter {
 		passaros = new Texture[3];
 		passaros[0] = new Texture("passaro1.png");
 		passaros[1] = new Texture("passaro2.png");
-		//passaros[2] = new Texture("passaro3.png");
+		passaros[2] = new Texture("passaro1.png");
 
 		//Chamas as imagens do cenario
 		fundo = new Texture("fundo.png");
@@ -147,6 +155,7 @@ public class Game extends ApplicationAdapter {
 		gameOver = new Texture("game_over.png");
 		coinOuro = new Texture("coin_ouro.png");
 		coinPrata = new Texture("coin_prata.png");
+		inicio = new Texture("begin.png");
 	}
 
 	//Chama esse metodo toda a vez que a rederizacao deve ser executada
@@ -173,19 +182,25 @@ public class Game extends ApplicationAdapter {
 			variacao = 0;
 	}
 
+	//Metodo que faz aparecer os assets do jogo
 	private void desenharTexturas() {
-		batch.setProjectionMatrix(camera.combined);
-		batch.begin();
+		batch.setProjectionMatrix(camera.combined); //Simula a camera
+		batch.begin(); //Inicia o jogo
+		//Desenha todas as texturas
 		batch.draw(fundo, 0, 0, larguraDispositivo, alturaDispositivo);
 		batch.draw(passaros[ (int) variacao],
 				50 + posicaoHorizontalPassaro, posicaoInicialVerticalPassaro);
-		batch.draw(canoBaixo, posicaoCanoHorizontal,
-				alturaDispositivo / 2 - canoBaixo.getHeight() - espacoEntreCanos / 2 + posicaoCanoVertical);
-		batch.draw(canoTopo, posicaoCanoHorizontal,
-				alturaDispositivo / 2 + espacoEntreCanos / 2 + posicaoCanoVertical );
+		batch.draw(canoBaixo,posicaoCanoHorizontal,alturaDispositivo/2-canoBaixo.getHeight()-espacoEntreCanos/2+posicaoCanoVertical);
+		batch.draw(canoTopo,posicaoCanoHorizontal,alturaDispositivo/2+espacoEntreCanos/2+posicaoCanoVertical);
+		batch.draw(coinOuro, coinPosHorizontalOuro, coinPosVerticalOuro);
+		batch.draw(coinPrata, coinPosHorizontalPrata, coinPosVerticalPrata);
 		textoPontuacao.draw(batch, String.valueOf(pontos), larguraDispositivo / 2,
 				alturaDispositivo - 110);
+		if(estadoJogo == 0){
+			batch.draw(inicio, 0, 0, larguraDispositivo, alturaDispositivo);
+		}
 
+		//Responsavel pelos textos de pontuacao e outras informacoes
 		if(estadoJogo == 2){
 			batch.draw(gameOver, larguraDispositivo / 2 - gameOver.getWidth() / 2,
 					alturaDispositivo / 2);
@@ -199,44 +214,54 @@ public class Game extends ApplicationAdapter {
 		batch.end();
 	}
 
-	//Detecta as colisoes para o game over
+	//Detecta as colisoes do passaro
 	private void detectarColisoes() {
 		circuloPassaro.set(
 			50 + posicaoHorizontalPassaro + passaros[0].getWidth() / 2,
 			posicaoInicialVerticalPassaro + passaros[0].getHeight() / 2,
 			passaros[0].getWidth() / 2
 		);
-
+		//Colisao do cano de baixo
 		retanguloCanoBaixo.set(
-			posicaoCanoHorizontal,
-			alturaDispositivo / 2 - canoBaixo.getHeight() - espacoEntreCanos / 2 + posicaoCanoHorizontal,
-			canoBaixo.getWidth(), canoBaixo.getHeight()
+				posicaoCanoHorizontal,
+				alturaDispositivo / 2 - canoBaixo.getHeight() - espacoEntreCanos / 2 + posicaoCanoVertical,
+				canoBaixo.getWidth(), canoBaixo.getHeight()
 		);
-
+		//Colisao do cano de cima
 		retanguloCanoCima.set(
-			posicaoCanoHorizontal, alturaDispositivo / 2 + espacoEntreCanos / 2 + posicaoCanoVertical,
-			canoTopo.getWidth(), canoTopo.getHeight()
+				posicaoCanoHorizontal, alturaDispositivo / 2 + espacoEntreCanos / 2 + posicaoCanoVertical,
+				canoTopo.getWidth(), canoTopo.getHeight()
 		);
-
-		coinCollider.set(
-			coinPosHorizontal + coinIndex.getWidth() / 2,
-				coinPosVertical + coinIndex.getWidth() / 2,
-				coinIndex.getWidth()/2,coinIndex.getHeight()/2
+		//Colisao da moeda de ouro
+		coinOuroCollider.set(
+				coinPosHorizontalOuro + coinOuro.getWidth() / 2,
+				coinPosVerticalOuro + coinOuro.getHeight() / 2,
+				coinOuro.getWidth() / 2
+		);
+		//Colisao da moeda de prata
+		coinPrataCollider.set(
+				coinPosHorizontalPrata + coinPrata.getWidth() / 2,
+				coinPosVerticalPrata + coinPrata.getHeight() / 2,
+				coinPrata.getWidth() / 2
 		);
 
 		boolean colidiuCanoCima = Intersector.overlaps(circuloPassaro, retanguloCanoCima);
 		boolean colidiuCanoBaixo = Intersector.overlaps(circuloPassaro, retanguloCanoBaixo);
-		boolean colidiuMoeda = Intersector.overlaps(circuloPassaro, coinCollider);
+		boolean colidiuMoedaOuro = Intersector.overlaps(circuloPassaro, coinOuroCollider);
+		boolean colidiuMoedaPrata = Intersector.overlaps(circuloPassaro, coinPrataCollider);
 
-		if(colidiuMoeda){
-			coinPosHorizontal -= Gdx.graphics.getDeltaTime() * 10000;
+		if(colidiuMoedaOuro){
 			somPontuacao.play();
-			if(randomValue == 1){
-				pontos += 10;
-			}
-			else if(randomValue == 0){
-				pontos += 5;
-			}
+			pontos += 10;
+			coinPosHorizontalOuro = larguraDispositivo;
+			coinPosVerticalOuro = random.nextInt((int) alturaDispositivo);
+		}
+
+		if(colidiuMoedaPrata){
+			somPontuacao.play();
+			pontos += 5;
+			coinPosHorizontalPrata = larguraDispositivo;
+			coinPosVerticalPrata = random.nextInt((int) alturaDispositivo);
 		}
 
 		if(colidiuCanoCima || colidiuCanoBaixo){
@@ -255,33 +280,35 @@ public class Game extends ApplicationAdapter {
 				estadoJogo = 1;
 				somVoando.play();
 			}
-		}else if (estadoJogo == 1){
+		}else if (estadoJogo == 1){ //Estado em que o jogador esta se movendo
 			if(toqueTela){
 				gravidade = -15;
 				somVoando.play();
 			}
-			coinPosHorizontal -= Gdx.graphics.getDeltaTime() * 200; //Gravidade no Coin
+
 			posicaoCanoHorizontal -= Gdx.graphics.getDeltaTime() * 200; //Gravidade no Cano
 			if(posicaoCanoHorizontal < -canoTopo.getWidth()){  //Define o local da abertura dos canos
 				posicaoCanoHorizontal = larguraDispositivo;
 				posicaoCanoVertical = random.nextInt(400) - 200;
 				passouCano = false;
 			}
-			if(coinPosHorizontal < -coinOuro.getWidth()){
-				randomValue = Math.floor(Math.random()*2);
-				if(randomValue == 0){
-					coinIndex = coinPrata;
-				}
-				else if(randomValue == 1){
-					coinIndex = coinOuro;
-				}
-				coinPosHorizontal = larguraDispositivo;
-				coinPosVertical = random.nextInt(400)-200;
+
+			coinPosHorizontalOuro -= Gdx.graphics.getDeltaTime() * 200; //Gravidade no Coin
+			coinPosHorizontalPrata -= Gdx.graphics.getDeltaTime() * 200;
+			if(coinPosHorizontalOuro <= -coinOuro.getWidth()){
+				coinPosHorizontalOuro = larguraDispositivo;
+				coinPosVerticalOuro = random.nextInt((int) alturaDispositivo);
 			}
+
+			if(coinPosHorizontalPrata <= -coinPrata.getWidth()){
+				coinPosHorizontalPrata = larguraDispositivo;
+				coinPosVerticalPrata = random.nextInt((int) alturaDispositivo);
+			}
+
 			if(posicaoInicialVerticalPassaro > 0 || toqueTela)  //Faz o passaro voar a cada toque
 				posicaoInicialVerticalPassaro = posicaoInicialVerticalPassaro - gravidade;
 			gravidade++;
-		}else if(estadoJogo == 2){ 
+		}else if(estadoJogo == 2){ //Estado em que o jogador morre e exibe sua pontuacao
 			if(pontos > pontuacaoMaxima){
 				pontuacaoMaxima = pontos;
 				preferencias.putInteger("pontuacaoMaxima", pontuacaoMaxima);
@@ -289,7 +316,7 @@ public class Game extends ApplicationAdapter {
 			}
 			posicaoHorizontalPassaro -= Gdx.graphics.getDeltaTime()*500;
 
-			if(toqueTela){
+			if(toqueTela){ //Recomeca o jogo
 				estadoJogo = 0;
 				pontos = 0;
 				gravidade = 0;
